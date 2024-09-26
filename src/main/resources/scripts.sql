@@ -28,3 +28,10 @@ CREATE TABLE users_roles (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
 );
+
+-- Check
+SELECT
+ users.id, first_name, last_name, email, password, date_of_birth, created_date, locked, roles.name AS 'role'
+ FROM users
+JOIN users_roles ON users.id = users_roles.user_id
+JOIN roles ON roles.id = users_roles.role_id;

@@ -24,7 +24,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.disable())
                 .csrf(csrfConfigurer -> csrfConfigurer.disable())
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("*").permitAll())
+                        .requestMatchers("/").hasRole("USER"))
                 .formLogin(Customizer.withDefaults())
                 .httpBasic(Customizer.withDefaults());
 
