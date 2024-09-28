@@ -1,5 +1,7 @@
 package com.example.paper.trading.config;
 
+import com.example.paper.trading.exceptionHandling.MyAccessDeniedHandler;
+import com.example.paper.trading.exceptionHandling.MyBasicAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -20,10 +22,14 @@ public class ProdSecurityConfig {
         http
                 // .requiresChannel(rcc -> rcc.anyRequest().requiresSecure()) // only https can access here
                 .cors(cors -> cors.disable())
+                .csrf(csrfConfigurer -> csrfConfigurer.disable())
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/").hasRole("USER"))
+                        .requestMatchers("/register").permitAll()
+                        .requestMatchers("/role-user").hasRole("USER")
+                        .requestMatchers("/role-admin").hasRole("ADMIN"))
                 .formLogin(Customizer.withDefaults())
-                .httpBasic(Customizer.withDefaults());
+                .httpBasic(hbc -> hbc.authenticationEntryPoint(new MyBasicAuthenticationEntryPoint()))
+                .exceptionHandling(ehc -> ehc.accessDeniedHandler(new MyAccessDeniedHandler()));
 
         return http.build();
     }

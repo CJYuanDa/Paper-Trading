@@ -1,5 +1,7 @@
 package com.example.paper.trading.config;
 
+import com.example.paper.trading.exceptionHandling.MyAccessDeniedHandler;
+import com.example.paper.trading.exceptionHandling.MyBasicAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -25,8 +27,9 @@ public class SecurityConfig {
                 .csrf(csrfConfigurer -> csrfConfigurer.disable())
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("/").hasRole("USER"))
-                .formLogin(Customizer.withDefaults())
-                .httpBasic(Customizer.withDefaults());
+                .formLogin(Customizer.withDefaults()) // LoginUrlAuthenticationEntryPoint
+                .httpBasic(hbc -> hbc.authenticationEntryPoint(new MyBasicAuthenticationEntryPoint()))
+                .exceptionHandling(ehc -> ehc.accessDeniedHandler(new MyAccessDeniedHandler()));
 
         return http.build();
     }
