@@ -17,6 +17,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException exp) {
         Map<String, String> response = new HashMap<>();
         response.put("error", exp.getMessage());
+
+        System.out.println(response);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
@@ -29,6 +31,8 @@ public class GlobalExceptionHandler {
         String errorField = ((FieldError) error).getField();
         String errorMessage = error.getDefaultMessage();
         response.put("error", errorField + ": " + errorMessage);
+
+        System.out.println(response);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 }

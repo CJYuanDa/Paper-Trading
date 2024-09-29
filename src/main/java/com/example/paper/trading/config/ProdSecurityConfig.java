@@ -27,7 +27,7 @@ public class ProdSecurityConfig {
                         .requestMatchers("/register").permitAll()
                         .requestMatchers("/role-user").hasRole("USER")
                         .requestMatchers("/role-admin").hasRole("ADMIN"))
-                .formLogin(Customizer.withDefaults())
+                .formLogin(Customizer.withDefaults())  // LoginUrlAuthenticationEntryPoint
                 .httpBasic(hbc -> hbc.authenticationEntryPoint(new MyBasicAuthenticationEntryPoint()))
                 .exceptionHandling(ehc -> ehc.accessDeniedHandler(new MyAccessDeniedHandler()));
 

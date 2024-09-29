@@ -24,6 +24,7 @@ public class MyBasicAuthenticationEntryPoint implements AuthenticationEntryPoint
         String errorMessage = authException.getMessage();
         String jsonResponse = String.format("{\"error\": \"%s\", \"path\": \"%s\"}", errorMessage, path);
 
+        System.out.println(jsonResponse);
         response.getWriter().write(jsonResponse);
     }
 }

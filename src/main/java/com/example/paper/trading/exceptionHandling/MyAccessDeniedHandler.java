@@ -24,6 +24,7 @@ public class MyAccessDeniedHandler implements AccessDeniedHandler {
         String path = request.getRequestURI();
         String jsonResponse = String.format("{\"error\": \"%s\", \"path\": \"%s\"}", errorMessage, path);
 
+        System.out.println(jsonResponse);
         response.getWriter().write(jsonResponse);
     }
 }
