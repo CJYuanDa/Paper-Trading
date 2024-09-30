@@ -28,6 +28,11 @@ public class ProdSecurityConfig {
                         .requestMatchers("/role-user").hasRole("USER")
                         .requestMatchers("/role-admin").hasRole("ADMIN"))
                 .formLogin(Customizer.withDefaults())  // LoginUrlAuthenticationEntryPoint
+                // only for stateful API (Session-Based)
+                .logout(loc -> loc
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID"))
                 .httpBasic(hbc -> hbc.authenticationEntryPoint(new MyBasicAuthenticationEntryPoint()))
                 .exceptionHandling(ehc -> ehc.accessDeniedHandler(new MyAccessDeniedHandler()));
 
