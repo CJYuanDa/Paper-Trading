@@ -1,5 +1,6 @@
 package com.example.paper.trading.service;
 
+import com.example.paper.trading.dataTransferObject.ApiLoginDTO;
 import com.example.paper.trading.dataTransferObject.UserDTO;
 import com.example.paper.trading.model.Users;
 import com.example.paper.trading.repository.RoleRepository;
@@ -7,6 +8,8 @@ import com.example.paper.trading.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,15 +22,19 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final AuthenticationManager authenticationManager;
+    private final JWTService jwtService;
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository, AuthenticationManager authenticationManager, JWTService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
     }
 
-    public ResponseEntity<Map<String, String>> register(UserDTO userDTO) {
+    public ResponseEntity<?> register(UserDTO userDTO) {
         if (userDTO == null) {
             throw new NullPointerException("The student Dto should not be null");
         }
@@ -69,14 +76,34 @@ public class UserService {
         throw new RuntimeException("User registration failed");
     }
 
-    public ResponseEntity<Map<String, String>> headerLogin(Authentication authentication) {
+    public ResponseEntity<?> headerLogin(Authentication authentication) {
         Users user = userRepository.findByEmail(authentication.getName()).orElseThrow(() ->
-                new RuntimeException("user service - can not find user"));
+                new RuntimeException("user service: header login -> can not find user"));
 
         Map<String, String> response = new HashMap<>();
         response.put("first name", user.getFirstName());
         response.put("email", user.getEmail());
-        
+
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    public ResponseEntity<?> apiLogin(ApiLoginDTO apiLoginDTO) {
+        Authentication unauthentication = UsernamePasswordAuthenticationToken
+                .unauthenticated(apiLoginDTO.username(), apiLoginDTO.password());
+        Authentication authenticationResponse = authenticationManager.authenticate(unauthentication);
+
+        if (authenticationResponse == null || !authenticationResponse.isAuthenticated()) {
+            throw new RuntimeException("user service: api login -> authenticated failed");
+        }
+
+        String jwt = jwtService.generate(authenticationResponse);
+
+        Optional<Users> user = userRepository.findByEmail(authenticationResponse.getName());
+        if (user.isEmpty()) throw new RuntimeException("user service: api login -> can not find user");
+        Map<String, String> response = new HashMap<>();
+        response.put("first name", user.get().getFirstName());
+        response.put("email", user.get().getEmail());
+
+        return ResponseEntity.status(HttpStatus.OK).header(jwtService.getJWTHeader(), jwt).body(response);
     }
 }

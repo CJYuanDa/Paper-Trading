@@ -1,5 +1,6 @@
 package com.example.paper.trading.controller;
 
+import com.example.paper.trading.dataTransferObject.ApiLoginDTO;
 import com.example.paper.trading.dataTransferObject.UserDTO;
 import com.example.paper.trading.service.UserService;
 import jakarta.validation.Valid;
@@ -21,13 +22,17 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody UserDTO userDTO) {
+    public ResponseEntity<?> register(@Valid @RequestBody UserDTO userDTO) {
         return userService.register(userDTO);
     }
 
     @RequestMapping("/header-login")
-    public ResponseEntity<Map<String, String>> headerLogin(Authentication authentication) {
+    public ResponseEntity<?> headerLogin(Authentication authentication) {
         return userService.headerLogin(authentication);
     }
 
+    @PostMapping("/api-login")
+    public ResponseEntity<?> apiLogin(@Valid @RequestBody ApiLoginDTO apiLoginDTO) {
+        return userService.apiLogin(apiLoginDTO);
+    }
 }

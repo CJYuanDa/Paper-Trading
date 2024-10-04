@@ -18,7 +18,7 @@ public class GlobalExceptionHandler {
         Map<String, String> response = new HashMap<>();
         response.put("error", exp.getMessage());
 
-        System.out.println(response);
+        System.out.println("Global Exception Handler - " + response);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 

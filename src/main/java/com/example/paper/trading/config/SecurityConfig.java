@@ -10,9 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -87,7 +90,7 @@ public class SecurityConfig {
                 }))
                 .csrf(csrfConfigurer -> csrfConfigurer
                         .csrfTokenRequestHandler(csrfTokenRequestAttributeHandler)
-                        .ignoringRequestMatchers("/register")
+                        .ignoringRequestMatchers("/register", "/api-login")
                         // JS and Angular can access the CSRF token manually, since HttpOnly is set to false.
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                 // Spring Security generates the CSRF token during request processing and stores it in a cookie
@@ -98,7 +101,7 @@ public class SecurityConfig {
                 .addFilterBefore(jwtTokenValidatorFilter, BasicAuthenticationFilter.class)
                 .requiresChannel(rcc -> rcc.anyRequest().requiresInsecure()) // only for http and not product
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/register").permitAll()
+                        .requestMatchers("/register", "/api-login").permitAll()
                         .requestMatchers("/header-login").authenticated()
                         .requestMatchers("/role-user").hasRole("USER")
                         .requestMatchers("/role-admin").hasRole("ADMIN"))
@@ -117,5 +120,15 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+
+        UserPwdAuthenticationProvider userPwdAuthenticationProvider = new UserPwdAuthenticationProvider(userDetailsService);
+        ProviderManager providerManager = new ProviderManager(userPwdAuthenticationProvider);
+        providerManager.setEraseCredentialsAfterAuthentication(false);
+
+        return providerManager;
     }
 }
