@@ -27,7 +27,7 @@ public class UserController {
 
     @RequestMapping("/header-login")
     public ResponseEntity<Map<String, String>> headerLogin(Authentication authentication) {
-        return null;
+        return userService.headerLogin(authentication);
     }
 
 }

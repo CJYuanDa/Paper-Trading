@@ -4,13 +4,11 @@ import com.example.paper.trading.dataTransferObject.UserDTO;
 import com.example.paper.trading.model.Users;
 import com.example.paper.trading.repository.RoleRepository;
 import com.example.paper.trading.repository.UserRepository;
-import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -72,7 +70,13 @@ public class UserService {
     }
 
     public ResponseEntity<Map<String, String>> headerLogin(Authentication authentication) {
-        Optional<Users> user = userRepository.findByEmail(authentication.getName());
-        return null;
+        Users user = userRepository.findByEmail(authentication.getName()).orElseThrow(() ->
+                new RuntimeException("user service - can not find user"));
+
+        Map<String, String> response = new HashMap<>();
+        response.put("first name", user.getFirstName());
+        response.put("email", user.getEmail());
+        
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
