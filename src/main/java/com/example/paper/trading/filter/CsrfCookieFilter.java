@@ -18,6 +18,6 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
         // render the token value to a cookie by causing the deferred token to be loaded
         csrfToken.getToken();
 
-        filterChain.doFilter(request,response);
+        filterChain.doFilter(request, response);
     }
 }

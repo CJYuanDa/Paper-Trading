@@ -1,15 +1,12 @@
 package com.example.paper.trading.controller;
 
 import com.example.paper.trading.dataTransferObject.UserDTO;
-import com.example.paper.trading.model.Users;
 import com.example.paper.trading.service.UserService;
 import jakarta.validation.Valid;
-import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -27,4 +24,10 @@ public class UserController {
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody UserDTO userDTO) {
         return userService.register(userDTO);
     }
+
+    @RequestMapping("/header-login")
+    public ResponseEntity<Map<String, String>> headerLogin(Authentication authentication) {
+        return null;
+    }
+
 }

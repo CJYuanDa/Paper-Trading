@@ -2,8 +2,9 @@ package com.example.paper.trading.config;
 
 import com.example.paper.trading.exceptionHandling.MyAccessDeniedHandler;
 import com.example.paper.trading.exceptionHandling.MyBasicAuthenticationEntryPoint;
-import com.example.paper.trading.filter.CsrfCookieFilter;
+import com.example.paper.trading.filter.*;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -21,20 +22,36 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 @Configuration
 @Profile("prod")
 public class ProdSecurityConfig {
 
+    @Autowired
+    private JWTTokenGeneratorFilter jwtTokenGeneratorFilter;
+    @Autowired
+    private JWTTokenValidatorFilter jwtTokenValidatorFilter;
+
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 
         CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler = new CsrfTokenRequestAttributeHandler();
 
+        /*
+        * SESSION (Stateful)
+        *
+        * http
+        *       .securityContext(contextConfig -> contextConfig.requireExplicitSave(false))
+        *       .sessionManagement(smc -> smc.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+        *
+        * */
+
+        // JWT (Stateless)
+
         http
-                .securityContext(contextConfig -> contextConfig.requireExplicitSave(false))
-                .sessionManagement(smc -> smc.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+                .sessionManagement(smc -> smc.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .cors(cors -> cors.configurationSource(new CorsConfigurationSource() {
                     @Override
                     public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
@@ -43,6 +60,7 @@ public class ProdSecurityConfig {
                         config.setAllowedMethods(Collections.singletonList("*"));
                         config.setAllowCredentials(true);
                         config.setAllowedHeaders(Collections.singletonList("*"));
+                        config.setExposedHeaders(Arrays.asList("Authorization"));
                         config.setMaxAge(3600L);
                         return config;
                     }
@@ -52,9 +70,12 @@ public class ProdSecurityConfig {
                         .ignoringRequestMatchers("/register")
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+                .addFilterBefore(jwtTokenValidatorFilter, BasicAuthenticationFilter.class)
+                .addFilterAfter(jwtTokenGeneratorFilter, BasicAuthenticationFilter.class)
                 // .requiresChannel(rcc -> rcc.anyRequest().requiresSecure()) // only https can access here
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("/register").permitAll()
+                        .requestMatchers("/header-login").authenticated()
                         .requestMatchers("/role-user").hasRole("USER")
                         .requestMatchers("/role-admin").hasRole("ADMIN"))
                 .formLogin(Customizer.withDefaults())

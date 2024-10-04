@@ -3,7 +3,10 @@ package com.example.paper.trading.config;
 import com.example.paper.trading.exceptionHandling.MyAccessDeniedHandler;
 import com.example.paper.trading.exceptionHandling.MyBasicAuthenticationEntryPoint;
 import com.example.paper.trading.filter.CsrfCookieFilter;
+import com.example.paper.trading.filter.JWTTokenGeneratorFilter;
+import com.example.paper.trading.filter.JWTTokenValidatorFilter;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -19,11 +22,17 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 @Configuration
 @Profile("!prod")
 public class SecurityConfig {
+
+    @Autowired
+    private JWTTokenGeneratorFilter jwtTokenGeneratorFilter;
+    @Autowired
+    private JWTTokenValidatorFilter jwtTokenValidatorFilter;
 
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -37,15 +46,25 @@ public class SecurityConfig {
         *       .sessionManagement(smc -> smc.invalidSessionUrl("/login").maximumSessions(1).maxSessionsPreventsLogin(true).expiredUrl())
         * */
 
+        /*
+        * SESSION (Stateful):
+        *
+        * http
+        *       // To make sure the SecurityContext (which holds information about the current user’s authentication)
+        *       // is saved automatically after each request, without the need for explicit intervention.
+        *       .securityContext(contextConfig -> contextConfig.requireExplicitSave(false))
+        *       // Because we're using our login page, therefore we need to tell spring to generate JSESSIONID for us
+        *       .sessionManagement(smc -> smc.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+        * */
+
         // to receive inside the RequestHeader from the UI
         CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler = new CsrfTokenRequestAttributeHandler();
 
+        // JWT (Stateless)
         http
-                // To make sure the SecurityContext (which holds information about the current user’s authentication)
-                // is saved automatically after each request, without the need for explicit intervention.
-                .securityContext(contextConfig -> contextConfig.requireExplicitSave(false))
-                // Because we're using our login page, therefore we need to tell spring to generate JSESSIONID for us
-                .sessionManagement(smc -> smc.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+                // ensures that no server-side session is created or managed, allowing your Spring Security
+                // setup to rely entirely on JWT for authentication and authorization.
+                .sessionManagement(smc -> smc.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .cors(cors -> cors.configurationSource(new CorsConfigurationSource() {
                     @Override
                     public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
@@ -56,8 +75,12 @@ public class SecurityConfig {
                         // enable accepting the user credentials or any other applicable cookies
                         // from the UI origin to backend server
                         config.setAllowCredentials(true);
-                        // to accept all kinds of headers
+                        // to accept all kinds of headers from client side
                         config.setAllowedHeaders(Collections.singletonList("*"));
+                        // It instructs the server to expose the Authorization header to the client in a CORS response.
+                        // By default, when a browser makes a cross-origin request,
+                        // only a few specific headers are exposed to the client (such as Content-Type, Cache-Control, etc.).
+                        config.setExposedHeaders(Arrays.asList("Authorization"));
                         config.setMaxAge(3600L); // seconds
                         return config;
                     }
@@ -71,9 +94,12 @@ public class SecurityConfig {
                 // using the CookieCsrfTokenRepository.
                 // After the CSRF token is stored, the request goes through CsrfCookieFilter for further processing.
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+                .addFilterAfter(jwtTokenGeneratorFilter, BasicAuthenticationFilter.class)
+                .addFilterBefore(jwtTokenValidatorFilter, BasicAuthenticationFilter.class)
                 .requiresChannel(rcc -> rcc.anyRequest().requiresInsecure()) // only for http and not product
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("/register").permitAll()
+                        .requestMatchers("/header-login").authenticated()
                         .requestMatchers("/role-user").hasRole("USER")
                         .requestMatchers("/role-admin").hasRole("ADMIN"))
                 .formLogin(Customizer.withDefaults()) // LoginUrlAuthenticationEntryPoint
